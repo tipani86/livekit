@@ -1,3 +1,3 @@
 set -e
-python3 minimal_assistant.py download-files
-python3 minimal_assistant.py dev
+python3 agent.py download-files
+python3 agent.py dev

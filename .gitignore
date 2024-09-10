@@ -1,2 +1,3 @@
+__api.tar.gz
 .venv
-.env
+.env*

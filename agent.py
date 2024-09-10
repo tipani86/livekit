@@ -4,28 +4,27 @@ from dotenv import load_dotenv
 from livekit import rtc
 from livekit.agents import AutoSubscribe, JobContext, WorkerOptions, cli, llm
 from livekit.agents.voice_assistant import VoiceAssistant
-from livekit.plugins import deepgram, openai, silero
+from livekit.plugins import azure, deepgram, openai, silero
 
-load_dotenv()
+load_dotenv(dotenv_path=".env.local")
 
 
 async def entrypoint(ctx: JobContext):
     initial_ctx = llm.ChatContext().append(
         role="system",
         text=(
-            "You are a voice assistant created by LiveKit. Your interface with users will be voice. "
+            "You are a voice assistant called Xiaopan (小潘). Your interface with users will be voice. Although you only see text, it's actually trascribed from user's voice input. "
             "You should use short and concise responses, and avoiding usage of unpronouncable punctuation."
         ),
     )
 
     await ctx.connect(auto_subscribe=AutoSubscribe.AUDIO_ONLY)
 
-    llm_plugin = openai.LLM()
     assistant = VoiceAssistant(
         vad=silero.VAD.load(),
-        stt=deepgram.STT(),
-        llm=llm_plugin,
-        tts=openai.TTS(),
+        stt=deepgram.STT(model="nova-2", language="zh"),
+        llm=openai.LLM(model="gpt-4o-mini"),
+        tts=azure.TTS(),
         chat_ctx=initial_ctx,
     )
     assistant.start(ctx.room)
@@ -37,7 +36,7 @@ async def entrypoint(ctx: JobContext):
     async def answer_from_text(txt: str):
         chat_ctx = assistant.chat_ctx.copy()
         chat_ctx.append(role="user", text=txt)
-        stream = llm_plugin.chat(chat_ctx=chat_ctx)
+        stream = assistant.llm.chat(chat_ctx=chat_ctx)
         await assistant.say(stream)
 
     @chat.on("message_received")
